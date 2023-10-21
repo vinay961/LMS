@@ -1,5 +1,6 @@
 import { Schema,model, trusted } from "mongoose";
 import bcrypt from "bcrypt"
+import jwt  from "jsonwebtoken";
 const userSchema = new Schema({
     name:{
         type: String,
@@ -43,7 +44,23 @@ userSchema.pre('save',async function(next){
     }
     this.password = await bcrypt.hash(this.password,10)
 })
+userSchema.methods = {
+    // method that help us compare plain password with hashed password and returns true or false
+    comparePassword: async function (plainPassword){
+        return await bcrypt.compare(plainPassword,this.password);
+    },
 
+    // will generate a JWT token with user id as playload
+    generateJWTToken: async function () {
+        return await jwt.sign(
+            { id: this._id, role: this.role, subscription: this._subscription },
+            process.env.SECRET,
+            {
+                expiresIn: 24 * 60 * 60 
+            }
+        );
+    }
+}
 
 const user = model('User',userSchema)
 export default user
